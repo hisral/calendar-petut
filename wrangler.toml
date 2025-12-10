@@ -1,0 +1,14 @@
+name = "shared-calendar"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Database D1 (Untuk User & Event)
+[[d1_databases]]
+binding = "DB"
+database_name = "calendar-db"
+database_id = "1edabf6e-e2bb-4c87-b2a4-04b49169ab33"
+
+# KV Namespace (Untuk Login Session)
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "595be12561c0497a9447805d98f8f9be"
