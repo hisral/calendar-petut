@@ -9,18 +9,15 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// --- SECURITY HELPER (SHA-256) ---
-// Fungsi ini mengubah password menjadi hash SHA-256
+// --- SECURITY (SHA-256) ---
 async function hashPassword(text: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
   const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-// --- TEMPLATE HTML (Sama seperti sebelumnya) ---
+// --- HTML LAYOUT ---
 const Layout = (content: any, title: string, user?: any) => html`
 <!DOCTYPE html>
 <html lang="id">
@@ -30,48 +27,58 @@ const Layout = (content: any, title: string, user?: any) => html`
   <title>${title}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
 </head>
-<body class="bg-gray-100 font-sans h-screen flex overflow-hidden">
+<body class="bg-gray-100 font-sans h-screen flex overflow-hidden text-slate-800">
+  
   ${user ? html`
-  <aside class="w-64 bg-slate-900 text-white flex flex-col hidden md:flex transition-all">
-    <div class="h-16 flex items-center justify-center text-xl font-bold border-b border-slate-700 bg-slate-800">
+  <aside class="w-64 bg-slate-900 text-white flex flex-col hidden md:flex shadow-xl z-20">
+    <div class="h-16 flex items-center px-6 text-xl font-bold border-b border-slate-700 bg-slate-800 tracking-tight">
       📅 Team Planner
     </div>
-    <nav class="flex-1 px-4 py-6 space-y-2">
-      <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Menu</div>
-      <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-600 transition ${title === 'Dashboard' ? 'bg-blue-700' : ''}">
+    <nav class="flex-1 px-3 py-6 space-y-1">
+      <div class="px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Main</div>
+      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Dashboard' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-slate-300'}">
         <span>Kalender</span>
       </a>
       ${user.role === 'admin' ? html`
-      <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-600 transition text-yellow-300 ${title === 'Admin Panel' ? 'bg-slate-700' : ''}">
+      <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Admin Panel' ? 'bg-slate-800 text-white' : 'text-slate-300'}">
         <span>⚙️ Admin Panel</span>
       </a>
       ` : ''}
     </nav>
-    <div class="p-4 border-t border-slate-700 bg-slate-800">
+    <div class="p-4 border-t border-slate-700 bg-slate-800/50">
       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-sm">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center font-bold text-sm shadow-lg">
           ${user.username.charAt(0).toUpperCase()}
         </div>
         <div>
-          <p class="text-sm font-medium">${user.username}</p>
+          <p class="text-sm font-medium text-white">${user.username}</p>
           <p class="text-xs text-slate-400 capitalize">${user.role}</p>
         </div>
       </div>
       <form action="/logout" method="post">
-        <button type="submit" class="w-full bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white py-2 rounded text-sm transition border border-red-600/30">Logout</button>
+        <button type="submit" class="w-full bg-slate-700 hover:bg-red-600 hover:text-white text-slate-300 py-2 rounded-lg text-xs font-medium transition duration-200">Sign Out</button>
       </form>
     </div>
   </aside>
   ` : ''}
+
   <main class="flex-1 flex flex-col overflow-hidden relative">
     ${content}
   </main>
+
 </body>
 </html>
 `;
 
-// --- HELPER AUTH ---
+// --- AUTH HELPER ---
 async function getSession(c: any) {
   const sessionId = getCookie(c, 'session_id');
   if (!sessionId) return null;
@@ -82,64 +89,50 @@ async function getSession(c: any) {
 
 // --- ROUTES ---
 
+// 1. LOGIN (Clean UI)
 app.get('/', async (c) => {
   const session = await getSession(c);
   if (session) return c.redirect('/dashboard');
 
   return c.html(Layout(html`
-    <div class="flex items-center justify-center h-full bg-gray-200 w-full bg-[url('https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop')] bg-cover bg-center">
-      <div class="absolute inset-0 bg-black/50"></div>
-      <div class="relative bg-white/90 backdrop-blur p-8 rounded-xl shadow-2xl w-96 border border-white/50">
-        <h2 class="text-3xl font-bold mb-6 text-center text-slate-800">Login</h2>
-        <form action="/login" method="post">
-          <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2">Username</label>
-            <input type="text" name="username" class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none" required>
+    <div class="flex items-center justify-center h-full w-full bg-[#f8fafc]">
+      <div class="w-full max-w-md p-8 bg-white rounded-2xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.07)] border border-slate-100">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Welcome Back</h1>
+            <p class="text-slate-500 text-sm">Please sign in to access your calendar</p>
+        </div>
+        <form action="/login" method="post" class="space-y-5">
+          <div>
+            <label class="block text-slate-700 text-sm font-semibold mb-2">Username</label>
+            <input type="text" name="username" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition" placeholder="Enter your username" required>
           </div>
-          <div class="mb-6">
-            <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-            <input type="password" name="password" class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none" required>
+          <div>
+            <label class="block text-slate-700 text-sm font-semibold mb-2">Password</label>
+            <input type="password" name="password" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition" placeholder="Enter your password" required>
           </div>
-          <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow transition transform hover:scale-[1.02]" type="submit">
+          <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-0.5" type="submit">
             Sign In
           </button>
         </form>
-        <p class="mt-4 text-xs text-center text-gray-500">Default: admin/admin123 or user/user123</p>
       </div>
     </div>
   `, 'Login'));
 });
 
-// LOGIN PROCESSS (UPDATED WITH HASH)
+// LOGIN PROCESS
 app.post('/login', async (c) => {
   const body = await c.req.parseBody();
   const { username, password } = body;
+  const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
 
-  // 1. Ambil user berdasarkan username saja
-  const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE username = ?')
-    .bind(username)
-    .first();
-
-  if (!user) {
-    return c.html(Layout(html`<div class="p-10 text-center text-red-500 bg-white">User not found <a href="/" class="underline">Try Again</a></div>`, 'Error'));
+  if (!user || (await hashPassword(String(password))) !== user.password) {
+     return c.html(Layout(html`<div class="h-full flex items-center justify-center flex-col gap-4"><div class="text-red-500 text-lg font-bold">Invalid Credentials</div><a href="/" class="text-blue-600 hover:underline">Try Again</a></div>`, 'Error'));
   }
 
-  // 2. Hash password yang diinput user saat ini
-  const inputHash = await hashPassword(String(password));
-
-  // 3. Bandingkan Hash Input dengan Hash di Database
-  if (inputHash !== user.password) {
-     return c.html(Layout(html`<div class="p-10 text-center text-red-500 bg-white">Wrong Password <a href="/" class="underline">Try Again</a></div>`, 'Error'));
-  }
-
-  // Jika cocok, buat sesi
   const sessionId = crypto.randomUUID();
-  // Hapus password dari object session sebelum disimpan ke KV agar aman
   delete user.password; 
-  
   await c.env.SESSION_KV.put(sessionId, JSON.stringify(user), { expirationTtl: 86400 });
   setCookie(c, 'session_id', sessionId, { httpOnly: true, secure: true, maxAge: 86400, path: '/' });
-  
   return c.redirect('/dashboard');
 });
 
@@ -150,82 +143,205 @@ app.post('/logout', async (c) => {
   return c.redirect('/');
 });
 
+// 2. DASHBOARD (Calendar with Edit/Delete & Colors)
 app.get('/dashboard', async (c) => {
   const user = await getSession(c);
   if (!user) return c.redirect('/');
 
   return c.html(Layout(html`
-    <div class="p-4 md:p-8 h-full overflow-auto flex flex-col">
-      <div class="flex justify-between items-center mb-6">
+    <div class="h-full flex flex-col">
+      <!-- Header -->
+      <div class="bg-white border-b border-gray-200 px-8 py-5 flex justify-between items-center shadow-sm z-10">
         <div>
-          <h1 class="text-2xl font-bold text-gray-800">Jadwal Tim</h1>
-          <p class="text-gray-500 text-sm">Kelola kegiatan bersama</p>
+          <h1 class="text-2xl font-bold text-slate-800">Jadwal Tim</h1>
+          <p class="text-slate-500 text-sm">Organize your events efficiently</p>
         </div>
-        <button onclick="document.getElementById('eventModal').classList.remove('hidden')" class="bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
-          <span>+ Tambah Event</span>
+        <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium shadow-md shadow-blue-500/20 transition flex items-center gap-2">
+          <span class="text-lg">+</span> Tambah Event
         </button>
       </div>
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex-1 overflow-hidden">
-         <div id="calendar" class="h-full"></div>
+
+      <!-- Calendar Wrapper -->
+      <div class="flex-1 bg-white p-6 overflow-hidden relative">
+         <div id="calendar" class="h-full font-sans"></div>
       </div>
     </div>
 
-    <div id="eventModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
-        <div class="p-6 border-b">
-          <h2 class="text-xl font-bold text-gray-800">Tambah Event</h2>
+    <!-- Universal Modal (Add & Edit) -->
+    <div id="eventModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform scale-100 transition-all overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <h2 id="modalTitle" class="text-lg font-bold text-slate-800">Event Baru</h2>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
         </div>
-        <form id="addEventForm" class="p-6 space-y-4">
+        
+        <form id="eventForm" class="p-6 space-y-4">
+          <input type="hidden" name="id" id="eventId"> <!-- Hidden ID for Editing -->
+
+          <!-- Title -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Kegiatan</label>
-            <input type="text" name="title" class="w-full border rounded-lg p-2.5 outline-none" required>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Judul Event</label>
+            <input type="text" name="title" id="eventTitle" class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Contoh: Meeting Proyek" required>
           </div>
+
+          <!-- Color Selection -->
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Kategori Warna</label>
+            <div class="flex gap-3">
+                <label class="cursor-pointer">
+                    <input type="radio" name="color" value="#3b82f6" class="peer sr-only" checked>
+                    <div class="w-8 h-8 rounded-full bg-blue-500 peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-blue-500 hover:scale-110 transition"></div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="color" value="#10b981" class="peer sr-only">
+                    <div class="w-8 h-8 rounded-full bg-emerald-500 peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-emerald-500 hover:scale-110 transition"></div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="color" value="#f59e0b" class="peer sr-only">
+                    <div class="w-8 h-8 rounded-full bg-amber-500 peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-amber-500 hover:scale-110 transition"></div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="color" value="#ef4444" class="peer sr-only">
+                    <div class="w-8 h-8 rounded-full bg-red-500 peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-red-500 hover:scale-110 transition"></div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="color" value="#8b5cf6" class="peer sr-only">
+                    <div class="w-8 h-8 rounded-full bg-violet-500 peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-violet-500 hover:scale-110 transition"></div>
+                </label>
+            </div>
+          </div>
+
+          <!-- Date/Time -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Mulai</label>
-              <input type="datetime-local" name="start" class="w-full border rounded-lg p-2.5 outline-none" required>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mulai</label>
+              <input type="datetime-local" name="start" id="eventStart" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50" required>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Selesai</label>
-              <input type="datetime-local" name="end" class="w-full border rounded-lg p-2.5 outline-none" required>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Selesai</label>
+              <input type="datetime-local" name="end" id="eventEnd" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50" required>
             </div>
           </div>
-          <div class="flex justify-end gap-3 mt-6">
-            <button type="button" onclick="document.getElementById('eventModal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Batal</button>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
+
+          <!-- Actions -->
+          <div class="flex justify-between items-center pt-4 border-t border-slate-100 mt-2">
+            <button type="button" id="btnDelete" class="hidden text-red-500 text-sm font-semibold hover:bg-red-50 px-3 py-2 rounded transition">Hapus Event</button>
+            <div class="flex gap-2 ml-auto">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 text-slate-500 font-medium hover:bg-slate-100 rounded-lg text-sm transition">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-md transition text-sm">Simpan</button>
+            </div>
           </div>
         </form>
       </div>
     </div>
 
     <script>
+      let calendar;
+      const modal = document.getElementById('eventModal');
+      const form = document.getElementById('eventForm');
+      const btnDelete = document.getElementById('btnDelete');
+
+      // Helper to open modal (Add vs Edit)
+      function openModal(eventData = null) {
+        modal.classList.remove('hidden');
+        if (eventData) {
+            // EDIT MODE
+            document.getElementById('modalTitle').textContent = 'Edit Event';
+            document.getElementById('eventId').value = eventData.id;
+            document.getElementById('eventTitle').value = eventData.title;
+            // Format Date for Input: YYYY-MM-DDTHH:MM
+            document.getElementById('eventStart').value = eventData.startStr.slice(0, 16); 
+            document.getElementById('eventEnd').value = eventData.endStr ? eventData.endStr.slice(0, 16) : eventData.startStr.slice(0, 16);
+            
+            // Set Color
+            const color = eventData.backgroundColor;
+            const radio = document.querySelector(\`input[name="color"][value="\${color}"]\`);
+            if(radio) radio.checked = true;
+
+            // Show Delete Button
+            btnDelete.classList.remove('hidden');
+            btnDelete.onclick = () => deleteEvent(eventData.id);
+        } else {
+            // ADD MODE
+            document.getElementById('modalTitle').textContent = 'Event Baru';
+            form.reset();
+            document.getElementById('eventId').value = '';
+            btnDelete.classList.add('hidden');
+        }
+      }
+
+      function closeModal() {
+        modal.classList.add('hidden');
+      }
+
+      async function deleteEvent(id) {
+          if(!confirm('Hapus event ini secara permanen?')) return;
+          const res = await fetch('/api/events/' + id, { method: 'DELETE' });
+          if(res.ok) {
+              calendar.getEventById(id).remove();
+              closeModal();
+          } else {
+              alert('Gagal menghapus (Anda bukan pemilik/admin)');
+          }
+      }
+
       document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
-        var calendar = new FullCalendar.Calendar(calendarEl, {
+        calendar = new FullCalendar.Calendar(calendarEl, {
           initialView: 'dayGridMonth',
           headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
           events: '/api/events',
           height: '100%',
-          eventColor: '#3b82f6',
+          editable: true, // Allow drag & drop
+          dayMaxEvents: true,
           eventClick: function(info) {
-             alert('📅 ' + info.event.title + '\\n👤 ' + info.event.extendedProps.created_by);
+            openModal(info.event);
+          },
+          eventDrop: async function(info) {
+             // Handle Drag & Drop Update (Simple time update)
+             await fetch('/api/events/' + info.event.id, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    title: info.event.title,
+                    start_time: info.event.start.toISOString(),
+                    end_time: info.event.end ? info.event.end.toISOString() : info.event.start.toISOString(),
+                    color: info.event.backgroundColor
+                })
+             });
           }
         });
         calendar.render();
 
-        document.getElementById('addEventForm').addEventListener('submit', async (e) => {
+        // Handle Submit (Create or Update)
+        form.addEventListener('submit', async (e) => {
           e.preventDefault();
           const formData = new FormData(e.target);
           const data = Object.fromEntries(formData);
+          const id = data.id;
+
           if(new Date(data.start) >= new Date(data.end)) { alert('Waktu selesai harus lebih besar'); return; }
-          
-          const res = await fetch('/api/events', {
-            method: 'POST', body: JSON.stringify({ title: data.title, start_time: data.start, end_time: data.end })
-          });
+
+          const payload = {
+            title: data.title,
+            start_time: data.start,
+            end_time: data.end,
+            color: data.color
+          };
+
+          let res;
+          if (id) {
+              // UPDATE
+              res = await fetch('/api/events/' + id, { method: 'PUT', body: JSON.stringify(payload) });
+          } else {
+              // CREATE
+              res = await fetch('/api/events', { method: 'POST', body: JSON.stringify(payload) });
+          }
+
           if(res.ok) {
             calendar.refetchEvents();
-            document.getElementById('eventModal').classList.add('hidden');
-            e.target.reset();
+            closeModal();
+          } else {
+            alert('Gagal menyimpan (Cek izin akses)');
           }
         });
       });
@@ -233,81 +349,126 @@ app.get('/dashboard', async (c) => {
   `, 'Dashboard', user));
 });
 
+// 3. ADMIN PANEL (Simple List)
 app.get('/admin', async (c) => {
   const user = await getSession(c);
   if (!user || user.role !== 'admin') return c.redirect('/dashboard');
 
   const { results: allUsers } = await c.env.DB.prepare('SELECT * FROM users').all();
-  const { results: allEvents } = await c.env.DB.prepare('SELECT * FROM events ORDER BY id DESC LIMIT 50').all();
 
   return c.html(Layout(html`
     <div class="p-8 h-full overflow-auto">
-      <h1 class="text-3xl font-bold text-gray-800 mb-8">Admin Dashboard</h1>
-      <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div class="p-5 border-b bg-gray-50"><h3 class="font-bold text-gray-700">Manajemen Pengguna</h3></div>
-          <div class="p-5">
-            <form action="/api/users" method="POST" class="flex gap-2 mb-6 bg-blue-50 p-4 rounded-lg">
-               <input name="username" placeholder="Username" class="border p-2 rounded w-full text-sm" required>
-               <input name="password" placeholder="Password" class="border p-2 rounded w-full text-sm" required>
-               <select name="role" class="border p-2 rounded text-sm bg-white"><option value="member">Member</option><option value="admin">Admin</option></select>
-               <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold whitespace-nowrap">Add User</button>
+      <h1 class="text-3xl font-bold text-slate-800 mb-8">Admin Dashboard</h1>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden max-w-4xl">
+          <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h3 class="font-bold text-slate-700">Manajemen User</h3>
+          </div>
+          <div class="p-6">
+            <form action="/api/users" method="POST" class="flex gap-3 mb-8 bg-blue-50 p-5 rounded-xl border border-blue-100 items-end">
+               <div class="flex-1">
+                 <label class="text-xs font-bold text-blue-800 uppercase mb-1 block">Username</label>
+                 <input name="username" class="border border-blue-200 p-2 rounded w-full text-sm" required>
+               </div>
+               <div class="flex-1">
+                 <label class="text-xs font-bold text-blue-800 uppercase mb-1 block">Password</label>
+                 <input name="password" class="border border-blue-200 p-2 rounded w-full text-sm" required>
+               </div>
+               <div class="w-32">
+                 <label class="text-xs font-bold text-blue-800 uppercase mb-1 block">Role</label>
+                 <select name="role" class="border border-blue-200 p-2 rounded w-full text-sm bg-white"><option value="member">Member</option><option value="admin">Admin</option></select>
+               </div>
+               <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded font-bold text-sm shadow-md transition h-[38px]">Tambah</button>
             </form>
             <table class="w-full text-sm text-left">
-              <thead class="bg-gray-100 uppercase text-xs"><tr><th class="px-4 py-3">User</th><th class="px-4 py-3">Role</th><th class="px-4 py-3">Aksi</th></tr></thead>
-              <tbody class="divide-y">${allUsers.map((u: any) => html`<tr class="hover:bg-gray-50"><td class="px-4 py-3">${u.username}</td><td class="px-4 py-3">${u.role}</td><td class="px-4 py-3"><button class="text-red-500" onclick="deleteItem('users', ${u.id})">Hapus</button></td></tr>`)}</tbody>
+              <thead class="bg-slate-100 text-slate-600 uppercase text-xs font-bold"><tr><th class="px-4 py-3 rounded-l-lg">User</th><th class="px-4 py-3">Role</th><th class="px-4 py-3 rounded-r-lg text-right">Aksi</th></tr></thead>
+              <tbody class="divide-y divide-gray-100">
+                ${allUsers.map((u: any) => html`
+                  <tr class="hover:bg-slate-50 transition">
+                    <td class="px-4 py-3 font-medium text-slate-700">${u.username}</td>
+                    <td class="px-4 py-3"><span class="bg-slate-200 text-slate-600 px-2 py-1 rounded text-xs font-bold uppercase">${u.role}</span></td>
+                    <td class="px-4 py-3 text-right"><button class="text-red-500 hover:bg-red-50 px-3 py-1 rounded transition text-xs font-bold" onclick="if(confirm('Hapus?')) fetch('/api/users/${u.id}',{method:'DELETE'}).then(()=>location.reload())">HAPUS</button></td>
+                  </tr>`)}
+              </tbody>
             </table>
           </div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-           <div class="p-5 border-b bg-gray-50"><h3 class="font-bold text-gray-700">Daftar Event</h3></div>
-           <div class="max-h-[500px] overflow-auto">
-            <table class="w-full text-sm text-left">
-                <thead class="bg-gray-100 uppercase text-xs sticky top-0"><tr><th class="px-4 py-3">Event</th><th class="px-4 py-3">Waktu</th><th class="px-4 py-3">Aksi</th></tr></thead>
-                <tbody class="divide-y">${allEvents.map((e: any) => html`<tr class="hover:bg-gray-50"><td class="px-4 py-3">${e.title}</td><td class="px-4 py-3">${e.start_time}</td><td class="px-4 py-3"><button class="text-red-500" onclick="deleteItem('events', ${e.id})">Hapus</button></td></tr>`)}</tbody>
-              </table>
-          </div>
-        </div>
-      </div>
     </div>
-    <script>async function deleteItem(t,i){if(confirm('Hapus?')) await fetch('/api/'+t+'/'+i,{method:'DELETE'});window.location.reload();}</script>
   `, 'Admin Panel', user));
 });
 
-// --- API ---
+// --- API (JSON) ---
 
+// GET EVENTS (Include Colors)
 app.get('/api/events', async (c) => {
   const session = await getSession(c);
   if (!session) return c.json({ error: 'Unauthorized' }, 401);
   const { results } = await c.env.DB.prepare('SELECT * FROM events').all();
-  return c.json(results.map((e: any) => ({ id: e.id, title: e.title, start: e.start_time, end: e.end_time, extendedProps: { created_by: e.created_by } })));
+  return c.json(results.map((e: any) => ({
+    id: e.id,
+    title: e.title,
+    start: e.start_time,
+    end: e.end_time,
+    backgroundColor: e.color || '#3b82f6', // Default Blue
+    borderColor: e.color || '#3b82f6',
+    extendedProps: { created_by: e.created_by }
+  })));
 });
 
+// CREATE EVENT
 app.post('/api/events', async (c) => {
   const session = await getSession(c);
   if (!session) return c.json({ error: 'Unauthorized' }, 401);
   const body = await c.req.json();
-  await c.env.DB.prepare('INSERT INTO events (title, start_time, end_time, created_by) VALUES (?, ?, ?, ?)').bind(body.title, body.start_time, body.end_time, session.username).run();
+  await c.env.DB.prepare('INSERT INTO events (title, start_time, end_time, color, created_by) VALUES (?, ?, ?, ?, ?)')
+    .bind(body.title, body.start_time, body.end_time, body.color, session.username).run();
   return c.json({ success: true });
 });
 
+// UPDATE EVENT (PUT)
+app.put('/api/events/:id', async (c) => {
+  const session = await getSession(c);
+  if (!session) return c.json({ error: 'Unauthorized' }, 401);
+  
+  const id = c.req.param('id');
+  const body = await c.req.json();
+  
+  // Check permission (Only Admin or Owner)
+  const event: any = await c.env.DB.prepare('SELECT * FROM events WHERE id = ?').bind(id).first();
+  if (!event) return c.json({ error: 'Not found' }, 404);
+  if (session.role !== 'admin' && event.created_by !== session.username) {
+      return c.json({ error: 'Forbidden' }, 403);
+  }
+
+  await c.env.DB.prepare('UPDATE events SET title=?, start_time=?, end_time=?, color=? WHERE id=?')
+    .bind(body.title, body.start_time, body.end_time, body.color, id).run();
+    
+  return c.json({ success: true });
+});
+
+// DELETE EVENT
 app.delete('/api/events/:id', async (c) => {
   const session = await getSession(c);
-  if (!session || session.role !== 'admin') return c.json({ error: 'Forbidden' }, 403);
-  await c.env.DB.prepare('DELETE FROM events WHERE id = ?').bind(c.req.param('id')).run();
+  if (!session) return c.json({ error: 'Unauthorized' }, 401);
+
+  const id = c.req.param('id');
+  const event: any = await c.env.DB.prepare('SELECT * FROM events WHERE id = ?').bind(id).first();
+  
+  if (!event) return c.json({ error: 'Not found' }, 404);
+  if (session.role !== 'admin' && event.created_by !== session.username) {
+      return c.json({ error: 'Forbidden' }, 403);
+  }
+
+  await c.env.DB.prepare('DELETE FROM events WHERE id = ?').bind(id).run();
   return c.json({ success: true });
 });
 
-// CREATE USER (HASH PASSWORD DULU)
+// USER API (Admin)
 app.post('/api/users', async (c) => {
   const session = await getSession(c);
   if (!session || session.role !== 'admin') return c.redirect('/admin');
   const body = await c.req.parseBody();
-  
   try {
-    // Hash password sebelum disimpan
     const hashedPassword = await hashPassword(String(body.password));
-    
     await c.env.DB.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)')
       .bind(body.username, hashedPassword, body.role).run();
   } catch(e) {}
