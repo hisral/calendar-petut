@@ -9,7 +9,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 app.get('/', async (c) => {
   const session = await getSession(c);
-  if (session) return c.redirect('/dashboard');
+  if (session) return c.redirect('/home');
   return c.html(Layout(html`
     <div class="flex items-center justify-center h-full w-full bg-[#f8fafc] px-4">
       <div class="w-full max-w-sm p-6 bg-white rounded-2xl shadow-xl border border-slate-100">
@@ -35,7 +35,7 @@ app.post('/login', async (c) => {
   delete user.password; 
   await c.env.SESSION_KV.put(sessionId, JSON.stringify(user), { expirationTtl: 86400 });
   setCookie(c, 'session_id', sessionId, { httpOnly: true, secure: true, maxAge: 86400, path: '/' });
-  return c.redirect('/dashboard');
+  return c.redirect('/home');
 });
 
 app.post('/logout', async (c) => {
