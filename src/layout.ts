@@ -32,10 +32,26 @@ export const Layout = (content: any, title: string, user?: any) => html`
     <div class="h-16 flex items-center px-6 text-xl font-bold border-b border-slate-700 bg-slate-800 tracking-tight">📅 Team App</div>
     <nav class="flex-1 px-3 py-6 space-y-1">
       <div class="px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Menu</div>
-      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300'}"><span>🗓️ Kalender</span></a>
-      <a href="/cashflow" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Buku Kas' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-300'}"><span>💰 Buku Kas</span></a>
-      <a href="/notes" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Catatan' ? 'bg-amber-600 text-white shadow-lg' : 'text-slate-300'}"><span>📝 Catatan</span></a>
-      ${user.role === 'admin' ? html`<div class="mt-4 px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Admin</div><a href="/admin" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Admin Panel' ? 'bg-slate-800 text-white' : 'text-slate-300'}"><span>⚙️ Panel</span></a>` : ''}
+      
+      <!-- Menu Home -->
+      <a href="/home" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Home' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-300'}">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> <span>Home</span>
+      </a>
+
+      <!-- Menu Kalender (Dipindah dari Dashboard) -->
+      <a href="/calendar" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Kalender' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-300'}">
+        <i data-lucide="calendar" class="w-4 h-4"></i> <span>Kalender</span>
+      </a>
+
+      <a href="/cashflow" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Buku Kas' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-300'}">
+        <i data-lucide="wallet" class="w-4 h-4"></i> <span>Buku Kas</span>
+      </a>
+      
+      <a href="/notes" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Catatan' ? 'bg-amber-600 text-white shadow-lg' : 'text-slate-300'}">
+        <i data-lucide="sticky-note" class="w-4 h-4"></i> <span>Catatan</span>
+      </a>
+
+      ${user.role === 'admin' ? html`<div class="mt-4 px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Admin</div><a href="/admin" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Admin Panel' ? 'bg-slate-800 text-white' : 'text-slate-300'}"><i data-lucide="settings" class="w-4 h-4"></i> <span>Panel</span></a>` : ''}
     </nav>
     <div class="p-4 border-t border-slate-700 bg-slate-800/50">
        <div class="flex items-center gap-3 mb-3"><div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-xs shadow-lg">${user.username.charAt(0).toUpperCase()}</div><div><p class="text-sm font-medium text-white">${user.username}</p></div></div>
@@ -45,11 +61,10 @@ export const Layout = (content: any, title: string, user?: any) => html`
 
   <!-- MOBILE BOTTOM NAV -->
   <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 z-40 pb-safe">
-    <a href="/dashboard" class="flex flex-col items-center justify-center w-full h-full ${title === 'Dashboard' ? 'text-blue-600' : 'text-gray-400'}"><i data-lucide="calendar" class="w-5 h-5"></i><span class="text-[10px] font-medium mt-1">Jadwal</span></a>
+    <a href="/home" class="flex flex-col items-center justify-center w-full h-full ${title === 'Home' ? 'text-indigo-600' : 'text-gray-400'}"><i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] font-medium mt-1">Home</span></a>
+    <a href="/calendar" class="flex flex-col items-center justify-center w-full h-full ${title === 'Kalender' ? 'text-blue-600' : 'text-gray-400'}"><i data-lucide="calendar" class="w-5 h-5"></i><span class="text-[10px] font-medium mt-1">Jadwal</span></a>
     <a href="/cashflow" class="flex flex-col items-center justify-center w-full h-full ${title === 'Buku Kas' ? 'text-emerald-600' : 'text-gray-400'}"><i data-lucide="wallet" class="w-5 h-5"></i><span class="text-[10px] font-medium mt-1">Kas</span></a>
-    <a href="/notes" class="flex flex-col items-center justify-center w-full h-full ${title === 'Catatan' ? 'text-amber-600' : 'text-gray-400'}"><i data-lucide="sticky-note" class="w-5 h-5"></i><span class="text-[10px] font-medium mt-1">Catatan</span></a>
-    ${user.role === 'admin' ? html`<a href="/admin" class="flex flex-col items-center justify-center w-full h-full ${title === 'Admin Panel' ? 'text-slate-800' : 'text-gray-400'}"><i data-lucide="settings" class="w-5 h-5"></i><span class="text-[10px] font-medium mt-1">Admin</span></a>` : ''}
-    <form action="/logout" method="post" class="w-full h-full"><button type="submit" class="flex flex-col items-center justify-center w-full h-full text-red-400 hover:text-red-600"><i data-lucide="log-out" class="w-5 h-5"></i><span class="text-[10px] font-medium mt-1">Keluar</span></button></form>
+    <a href="/notes" class="flex flex-col items-center justify-center w-full h-full ${title === 'Catatan' ? 'text-amber-600' : 'text-gray-400'}"><i data-lucide="sticky-note" class="w-5 h-5"></i><span class="text-[10px] font-medium mt-1">Note</span></a>
   </nav>
   ` : ''}
 
