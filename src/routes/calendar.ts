@@ -6,8 +6,7 @@ import { getSession } from '../utils';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// PAGE
-app.get('/dashboard', async (c) => {
+app.get('/calendar', async (c) =>
   const user = await getSession(c);
   if (!user) return c.redirect('/');
 
@@ -66,7 +65,7 @@ app.get('/dashboard', async (c) => {
       async function deleteEvent(id){if(confirm('Hapus?')) await fetch('/api/events/'+id,{method:'DELETE'}).then(r=>{if(r.ok){calendar.getEventById(id).remove();closeModal()}else alert('Gagal')})}
       document.addEventListener('DOMContentLoaded',function(){calendar=new FullCalendar.Calendar(document.getElementById('calendar'),{initialView:'dayGridMonth',headerToolbar:isMobile?{left:'prev,next',center:'title',right:''}:{left:'prev,next today',center:'title',right:'dayGridMonth,timeGridWeek,listWeek'},events:'/api/events',height:'100%',editable:true,dayMaxEvents:true,eventClick:i=>openModal(i.event),eventDidMount:function(i){const el=i.el;if(!isMobile){el.addEventListener('mouseenter',e=>{tooltipTimer=setTimeout(()=>{tooltipTitle.innerText=i.event.title;tooltipContent.innerText=i.event.extendedProps.description||"-";tooltipMeta.innerText="Oleh: "+i.event.extendedProps.created_by;tooltip.style.left=(e.pageX+15)+'px';tooltip.style.top=(e.pageY+15)+'px';tooltip.classList.remove('hidden');setTimeout(()=>tooltip.classList.remove('opacity-0'),10)},2000)});el.addEventListener('mouseleave',()=>{clearTimeout(tooltipTimer);tooltip.classList.add('opacity-0');tooltip.classList.add('hidden')})}},eventDrop:async i=>fetch('/api/events/'+i.event.id,{method:'PUT',body:JSON.stringify({title:i.event.title,description:i.event.extendedProps.description,start_time:i.event.start.toISOString(),end_time:i.event.end?i.event.end.toISOString():i.event.start.toISOString(),color:i.event.backgroundColor})})});calendar.render();form.addEventListener('submit',async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));if(new Date(d.start)>=new Date(d.end)){alert('Waktu salah');return}const url=d.id?'/api/events/'+d.id:'/api/events';const m=d.id?'PUT':'POST';await fetch(url,{method:m,body:JSON.stringify({title:d.title,description:d.description,start_time:d.start,end_time:d.end,color:d.color})}).then(r=>{if(r.ok){calendar.refetchEvents();closeModal()}else alert('Error')})})});
     </script>
-  `, 'Dashboard', user));
+`, 'Kalender', user)); 
 });
 
 // API
