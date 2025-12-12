@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { setCookie, deleteCookie } from 'hono/cookie';
+import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { html } from 'hono/html';
 import { Bindings } from '../bindings';
 import { Layout } from '../layout';
