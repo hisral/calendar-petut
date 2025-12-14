@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
+import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { html } from 'hono/html';
 import { Bindings } from '../bindings';
 import { Layout } from '../layout';
@@ -7,6 +7,7 @@ import { getSession, hashPassword } from '../utils';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+// Login & Home Redirect (Sama seperti sebelumnya)
 app.get('/', async (c) => {
   const session = await getSession(c);
   if (session) return c.redirect('/home');
@@ -32,17 +33,48 @@ app.post('/login', async (c) => {
      return c.html(Layout(html`<div class="h-full flex items-center justify-center flex-col gap-4 px-4 text-center"><div class="text-red-500 text-lg font-bold">Login Gagal</div><a href="/" class="text-blue-600 hover:underline bg-blue-50 px-4 py-2 rounded-lg">Coba Lagi</a></div>`, 'Error'));
   }
   const sessionId = crypto.randomUUID();
-  delete user.password; 
-  await c.env.SESSION_KV.put(sessionId, JSON.stringify(user), { expirationTtl: 86400 });
+  // Simpan data user ke Session KV (termasuk role)
+  // Kita hapus password dari object session
+  const sessionData = { id: user.id, username: user.username, role: user.role };
+  await c.env.SESSION_KV.put(sessionId, JSON.stringify(sessionData), { expirationTtl: 86400 });
   setCookie(c, 'session_id', sessionId, { httpOnly: true, secure: true, maxAge: 86400, path: '/' });
   return c.redirect('/home');
 });
 
+// LOGOUT
 app.post('/logout', async (c) => {
-  const sessionId = getCookie(c, 'session_id'); // Tidak perlu utils.getSession disini, cukup cookie
+  const sessionId = getCookie(c, 'session_id');
   if(sessionId) await c.env.SESSION_KV.delete(sessionId);
   deleteCookie(c, 'session_id');
   return c.redirect('/');
+});
+
+// CHANGE PASSWORD (BARU)
+app.post('/api/change-password', async (c) => {
+    const session: any = await getSession(c);
+    if (!session) return c.redirect('/');
+    
+    const body = await c.req.parseBody();
+    const oldPass = String(body.old_password);
+    const newPass = String(body.new_password);
+
+    // Ambil password asli dari DB untuk verifikasi
+    const user: any = await c.env.DB.prepare('SELECT password FROM users WHERE id = ?').bind(session.id).first();
+    
+    if (!user || (await hashPassword(oldPass)) !== user.password) {
+        return c.text('Password lama salah!', 400);
+    }
+
+    // Update password baru
+    const newHash = await hashPassword(newPass);
+    await c.env.DB.prepare('UPDATE users SET password = ? WHERE id = ?').bind(newHash, session.id).run();
+    
+    return c.html(Layout(html`
+        <div class="h-full flex items-center justify-center flex-col gap-4 px-4 text-center">
+            <div class="text-emerald-600 text-lg font-bold">Password Berhasil Diganti!</div>
+            <a href="/home" class="bg-slate-800 text-white px-4 py-2 rounded-lg">Kembali ke Home</a>
+        </div>
+    `, 'Sukses', session));
 });
 
 export default app;
