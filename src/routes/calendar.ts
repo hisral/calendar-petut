@@ -2,27 +2,28 @@ import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { Bindings } from '../bindings';
 import { Layout } from '../layout';
-import { getSession, canWrite } from '../utils'; // Import helper
+import { getSession, canWrite } from '../utils';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.get('/calendar', async (c) => {
   const user = await getSession(c);
   if (!user) return c.redirect('/');
-  const isWriter = canWrite(user); // Cek hak akses
+  const isWriter = canWrite(user); 
 
   return c.html(Layout(html`
     <div class="h-full flex flex-col">
+      <!-- Header -->
       <div class="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shadow-sm z-20">
         <div><h1 class="text-xl md:text-2xl font-bold text-slate-800">Jadwal Tim</h1><p class="text-slate-500 text-xs">Kegiatan & Agenda</p></div>
         
-        <!-- HIDE BUTTON IF VIEW ONLY -->
         ${isWriter ? html`
         <button onclick="openModal()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-md transition text-sm flex justify-center items-center gap-2 active:bg-blue-800">
           <i data-lucide="plus" class="w-4 h-4"></i> Tambah Event
         </button>` : ''}
       </div>
-      <!-- ... (Legend Warna Sama) ... -->
+
+      <!-- Legend -->
       <div class="bg-slate-50 border-b border-gray-200 px-4 md:px-8 py-2 flex flex-wrap gap-x-4 gap-y-2 text-[10px] md:text-xs text-slate-600 z-10">
          <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-violet-600"></span> <span>BPH</span></div>
          <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> <span>Bidang</span></div>
@@ -34,9 +35,8 @@ app.get('/calendar', async (c) => {
       <div class="flex-1 bg-white p-2 md:p-6 overflow-hidden relative"><div id="calendar" class="h-full font-sans text-xs md:text-sm"></div></div>
     </div>
 
-    <!-- Modal Form (Hidden logic in script) -->
+    <!-- Modal Form -->
     <div id="eventModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4 transition-opacity">
-       <!-- ... Isi modal sama ... -->
        <div class="bg-white rounded-t-2xl md:rounded-2xl shadow-2xl w-full md:max-w-md h-[90vh] md:h-auto flex flex-col animate-slide-up md:animate-none">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
             <h2 id="modalTitle" class="text-lg font-bold text-slate-800">Event</h2>
@@ -44,9 +44,17 @@ app.get('/calendar', async (c) => {
         </div>
         <form id="eventForm" class="p-6 space-y-4 overflow-y-auto flex-1">
           <input type="hidden" name="id" id="eventId">
-          <!-- ... Input Fields Sama ... -->
+          
           <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Judul Agenda</label><input type="text" name="title" id="eventTitle" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" required placeholder="Contoh: Rapat Koordinasi"></div>
-          <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Kategori (Wajib Pilih)</label><div class="flex flex-col gap-2"><label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-violet-50 has-[:checked]:border-violet-500 has-[:checked]:bg-violet-50 transition"><input type="radio" name="color" value="#7c3aed" class="peer w-4 h-4 text-violet-600 focus:ring-violet-500" checked><span class="w-3 h-3 rounded-full bg-violet-600"></span><span class="text-sm font-medium text-slate-700">Agenda BPH</span></label><label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-blue-50 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 transition"><input type="radio" name="color" value="#2563eb" class="peer w-4 h-4 text-blue-600 focus:ring-blue-500"><span class="w-3 h-3 rounded-full bg-blue-600"></span><span class="text-sm font-medium text-slate-700">Agenda Bidang</span></label><label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 transition"><input type="radio" name="color" value="#059669" class="peer w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span class="w-3 h-3 rounded-full bg-emerald-600"></span><span class="text-sm font-medium text-slate-700">Agenda Bipeka</span></label><label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-amber-50 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 transition"><input type="radio" name="color" value="#d97706" class="peer w-4 h-4 text-amber-600 focus:ring-amber-500"><span class="w-3 h-3 rounded-full bg-amber-600"></span><span class="text-sm font-medium text-slate-700">Agenda Struktural DPC+</span></label><label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-red-50 has-[:checked]:border-red-500 has-[:checked]:bg-red-50 transition"><input type="radio" name="color" value="#dc2626" class="peer w-4 h-4 text-red-600 focus:ring-red-500"><span class="w-3 h-3 rounded-full bg-red-600"></span><span class="text-sm font-medium text-slate-700">Agenda Aleg</span></label></div></div>
+          
+          <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Kategori (Wajib Pilih)</label><div class="flex flex-col gap-2">
+            <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-violet-50 has-[:checked]:border-violet-500 has-[:checked]:bg-violet-50 transition"><input type="radio" name="color" value="#7c3aed" class="peer w-4 h-4 text-violet-600 focus:ring-violet-500" checked><span class="w-3 h-3 rounded-full bg-violet-600"></span><span class="text-sm font-medium text-slate-700">Agenda BPH</span></label>
+            <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-blue-50 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 transition"><input type="radio" name="color" value="#2563eb" class="peer w-4 h-4 text-blue-600 focus:ring-blue-500"><span class="w-3 h-3 rounded-full bg-blue-600"></span><span class="text-sm font-medium text-slate-700">Agenda Bidang</span></label>
+            <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 transition"><input type="radio" name="color" value="#059669" class="peer w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span class="w-3 h-3 rounded-full bg-emerald-600"></span><span class="text-sm font-medium text-slate-700">Agenda Bipeka</span></label>
+            <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-amber-50 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 transition"><input type="radio" name="color" value="#d97706" class="peer w-4 h-4 text-amber-600 focus:ring-amber-500"><span class="w-3 h-3 rounded-full bg-amber-600"></span><span class="text-sm font-medium text-slate-700">Agenda Struktural DPC+</span></label>
+            <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-red-50 has-[:checked]:border-red-500 has-[:checked]:bg-red-50 transition"><input type="radio" name="color" value="#dc2626" class="peer w-4 h-4 text-red-600 focus:ring-red-500"><span class="w-3 h-3 rounded-full bg-red-600"></span><span class="text-sm font-medium text-slate-700">Agenda Aleg</span></label>
+          </div></div>
+
           <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Deskripsi</label><textarea name="description" id="eventDescription" rows="2" class="w-full border border-slate-300 rounded-lg p-3 text-sm resize-none focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Detail tambahan..."></textarea></div>
           <div class="grid grid-cols-2 gap-3"><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mulai</label><input type="datetime-local" name="start" id="eventStart" class="w-full border border-slate-300 rounded-lg p-2 text-sm" required></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Selesai</label><input type="datetime-local" name="end" id="eventEnd" class="w-full border border-slate-300 rounded-lg p-2 text-sm" required></div></div>
           
@@ -64,16 +72,16 @@ app.get('/calendar', async (c) => {
     <script>
       let calendar; const modal=document.getElementById('eventModal'), form=document.getElementById('eventForm'), btnDelete=document.getElementById('btnDelete');
       const isMobile = window.innerWidth < 768;
-      // Pass permission ke JS
-      const canWrite = ${isWriter}; 
+      
+      // --- PERBAIKAN DI SINI ---
+      // Kita ubah boolean menjadi string eksplisit 'true' atau 'false'
+      const canWrite = ${isWriter ? 'true' : 'false'}; 
 
       function openModal(e){
-          // Jika view only dan mencoba edit (klik event), jangan buka modal atau tampilkan alert
           if(!canWrite) {
              if(e) alert('Anda hanya memiliki akses View Only.');
              return; 
           }
-          
           modal.classList.remove('hidden'); 
           if(e){
               document.getElementById('modalTitle').textContent='Edit Event'; 
@@ -100,7 +108,7 @@ app.get('/calendar', async (c) => {
         calendar=new FullCalendar.Calendar(document.getElementById('calendar'),{
           initialView:'dayGridMonth', headerToolbar:isMobile?{left:'prev,next',center:'title',right:''}:{left:'prev,next today',center:'title',right:'dayGridMonth,timeGridWeek,listWeek'},
           events:'/api/events', height:'100%', 
-          editable: canWrite, // Disable drag drop jika view only
+          editable: canWrite, // JS Boolean dari variabel diatas
           dayMaxEvents:true,
           eventClick:i=>openModal(i.event),
           eventDidMount:function(i){
@@ -120,6 +128,7 @@ app.get('/calendar', async (c) => {
   `, 'Kalender', user));
 });
 
+// API Routes
 app.get('/api/events', async (c) => {
   const session = await getSession(c); if (!session) return c.json({ error: 'Unauthorized' }, 401);
   const { results } = await c.env.DB.prepare('SELECT * FROM events').all();
@@ -128,24 +137,22 @@ app.get('/api/events', async (c) => {
   })));
 });
 
-// SECURE WRITE ENDPOINTS
 app.post('/api/events', async (c) => { 
-  const s = await getSession(c); 
-  if(!s || !canWrite(s)) return c.json({error:'Forbidden'},403); 
+  const s = await getSession(c); if(!s || !canWrite(s)) return c.json({error:'Forbidden'},403); 
   const b = await c.req.json(); 
   await c.env.DB.prepare('INSERT INTO events (title,description,start_time,end_time,color,created_by) VALUES (?,?,?,?,?,?)').bind(b.title,b.description,b.start_time,b.end_time,b.color,s.username).run(); 
   return c.json({ok:true}); 
 });
+
 app.put('/api/events/:id', async (c) => { 
-  const s = await getSession(c); 
-  if(!s || !canWrite(s)) return c.json({error:'Forbidden'},403); 
+  const s = await getSession(c); if(!s || !canWrite(s)) return c.json({error:'Forbidden'},403); 
   const b = await c.req.json(); 
   await c.env.DB.prepare('UPDATE events SET title=?,description=?,start_time=?,end_time=?,color=? WHERE id=?').bind(b.title,b.description,b.start_time,b.end_time,b.color,c.req.param('id')).run(); 
   return c.json({ok:true}); 
 });
+
 app.delete('/api/events/:id', async (c) => { 
-  const s = await getSession(c); 
-  if(!s || !canWrite(s)) return c.json({error:'Forbidden'},403); 
+  const s = await getSession(c); if(!s || !canWrite(s)) return c.json({error:'Forbidden'},403); 
   await c.env.DB.prepare('DELETE FROM events WHERE id=?').bind(c.req.param('id')).run(); 
   return c.json({ok:true}); 
 });
