@@ -33,7 +33,7 @@ app.get('/notes', async (c) => {
             </div>
 
             <div class="flex gap-2 w-full md:w-auto">
-                <!-- HANYA TAMPIL JIKA WRITER (Admin/Contributor) -->
+                <!-- HANYA TAMPIL JIKA WRITER -->
                 ${isWriter ? html`
                  <button onclick="createNote(true)" class="flex-1 md:flex-none bg-amber-100 hover:bg-amber-200 text-amber-800 px-4 py-2 rounded-lg font-medium transition text-sm flex justify-center items-center gap-2">
                     <i data-lucide="folder-plus" class="w-4 h-4"></i> Folder
@@ -115,9 +115,11 @@ app.get('/notes', async (c) => {
         let currentNoteId = null;
         let searchTerm = '';
         
-        // --- PERBAIKAN UTAMA DISINI ---
-        // Mengubah boolean menjadi string 'true' atau 'false' agar tidak error syntax
-        const canWrite = ${isWriter ? 'true' : 'false'}; 
+        // --- PERBAIKAN FOOLPROOF DISINI ---
+        // Jika isWriter true => mencetak "1", jika false => "0"
+        // Di JS browser: const canWrite = 1 === 1; (True) atau 0 === 1; (False)
+        // Ini aman dari glitch template string.
+        const canWrite = ${isWriter ? 1 : 0} === 1; 
 
         const container = document.getElementById('notesContainer');
         const breadcrumbs = document.getElementById('breadcrumbs');
@@ -273,25 +275,6 @@ app.get('/api/notes', async (c) => {
 });
 
 app.post('/api/notes', async (c) => {
-    const s = await getSession(c); if (!s || !canWrite(s)) return c.json({error:'Forbidden'},401); // Proteksi
+    const s = await getSession(c); if (!s || !canWrite(s)) return c.json({error:'Forbidden'},401); 
     const b = await c.req.json(); const id = crypto.randomUUID(); const now = Date.now();
-    await c.env.DB.prepare('INSERT INTO notes (id, parent_id, title, content, is_folder, updated_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
-        .bind(id, b.parent_id || null, b.title, b.content, b.is_folder, now, s.username).run();
-    return c.json({ success: true, id });
-});
-
-app.put('/api/notes/:id', async (c) => {
-    const s = await getSession(c); if (!s || !canWrite(s)) return c.json({error:'Forbidden'},401); // Proteksi
-    const b = await c.req.json(); const id = c.req.param('id'); const now = Date.now();
-    await c.env.DB.prepare('UPDATE notes SET title=?, content=?, updated_at=? WHERE id=?')
-        .bind(b.title, b.content, now, id).run();
-    return c.json({ success: true });
-});
-
-app.delete('/api/notes/:id', async (c) => {
-    const s = await getSession(c); if (!s || !canWrite(s)) return c.json({error:'Forbidden'},401); // Proteksi
-    await c.env.DB.prepare('DELETE FROM notes WHERE id=?').bind(c.req.param('id')).run();
-    return c.json({ success: true });
-});
-
-export default app;
+    await c.env.DB.prepare('I
