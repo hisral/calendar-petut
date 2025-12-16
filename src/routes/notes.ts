@@ -11,8 +11,11 @@ app.get('/notes', async (c) => {
   const user = await getSession(c);
   if (!user) return c.redirect('/');
   
-  // Cek Hak Akses
+  // 1. Cek Hak Akses
   const isWriter = canWrite(user);
+  
+  // 2. Konversi ke Angka (1 atau 0) di Server Side agar aman saat di-inject ke HTML
+  const writerFlag = isWriter ? 1 : 0;
 
   return c.html(Layout(html`
     <div class="h-full flex flex-col bg-slate-50">
@@ -84,7 +87,6 @@ app.get('/notes', async (c) => {
 
     <!-- Logic Script -->
     <script>
-        // --- INDEXED DB HELPER ---
         const DB_NAME = 'TeamAppDB';
         const STORE_NAME = 'notes';
         const dbPromise = new Promise((resolve, reject) => {
@@ -115,11 +117,10 @@ app.get('/notes', async (c) => {
         let currentNoteId = null;
         let searchTerm = '';
         
-        // --- PERBAIKAN FOOLPROOF DISINI ---
-        // Jika isWriter true => mencetak "1", jika false => "0"
-        // Di JS browser: const canWrite = 1 === 1; (True) atau 0 === 1; (False)
-        // Ini aman dari glitch template string.
-        const canWrite = ${isWriter ? 1 : 0} === 1; 
+        // --- PERBAIKAN: Menggunakan Angka (1 atau 0) ---
+        // JavaScript membaca ini sebagai: const canWrite = 1; atau const canWrite = 0;
+        // Angka 1 dianggap true, 0 dianggap false dalam kondisi if
+        const canWrite = ${writerFlag}; 
 
         const container = document.getElementById('notesContainer');
         const breadcrumbs = document.getElementById('breadcrumbs');
@@ -195,13 +196,13 @@ app.get('/notes', async (c) => {
 
         // --- CRUD ACTIONS ---
         function createNote(isFolder) {
-            if(!canWrite) return; // Proteksi Client Side
+            if(!canWrite) return; // 1 is true, 0 is false
             currentNoteId = null; titleInput.value = ''; contentInput.value = '';
             
-            // Enable Inputs for New Note
+            // Enable Inputs
             titleInput.disabled = false; contentInput.disabled = false;
             btnSave.classList.remove('hidden'); 
-            btnDelete.classList.add('hidden'); // Cannot delete new
+            btnDelete.classList.add('hidden'); 
 
             if(isFolder) {
                 const name = prompt("Nama Folder:");
@@ -218,7 +219,6 @@ app.get('/notes', async (c) => {
             contentInput.value = note.content;
             modal.classList.remove('hidden');
 
-            // LOGIC VIEW ONLY vs WRITER
             if (canWrite) {
                 titleInput.disabled = false;
                 contentInput.disabled = false;
@@ -226,7 +226,6 @@ app.get('/notes', async (c) => {
                 btnSave.classList.remove('hidden');
                 btnDelete.onclick = () => deleteItem(note.id);
             } else {
-                // Read Only Mode
                 titleInput.disabled = true;
                 contentInput.disabled = true;
                 btnDelete.classList.add('hidden');
@@ -277,4 +276,23 @@ app.get('/api/notes', async (c) => {
 app.post('/api/notes', async (c) => {
     const s = await getSession(c); if (!s || !canWrite(s)) return c.json({error:'Forbidden'},401); 
     const b = await c.req.json(); const id = crypto.randomUUID(); const now = Date.now();
-    await c.env.DB.prepare('I
+    await c.env.DB.prepare('INSERT INTO notes (id, parent_id, title, content, is_folder, updated_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .bind(id, b.parent_id || null, b.title, b.content, b.is_folder, now, s.username).run();
+    return c.json({ success: true, id });
+});
+
+app.put('/api/notes/:id', async (c) => {
+    const s = await getSession(c); if (!s || !canWrite(s)) return c.json({error:'Forbidden'},401); 
+    const b = await c.req.json(); const id = c.req.param('id'); const now = Date.now();
+    await c.env.DB.prepare('UPDATE notes SET title=?, content=?, updated_at=? WHERE id=?')
+        .bind(b.title, b.content, now, id).run();
+    return c.json({ success: true });
+});
+
+app.delete('/api/notes/:id', async (c) => {
+    const s = await getSession(c); if (!s || !canWrite(s)) return c.json({error:'Forbidden'},401); 
+    await c.env.DB.prepare('DELETE FROM notes WHERE id=?').bind(c.req.param('id')).run();
+    return c.json({ success: true });
+});
+
+export default app;
