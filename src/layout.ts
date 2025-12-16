@@ -8,10 +8,10 @@ export const Layout = (content: any, title: string, user?: any) => html`
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>${title}</title>
   
-  <!-- FAVICON CUSTOM -->
-  <link rel="apple-touch-icon" sizes="180x180" href="https://cdn.jsdelivr.net/gh/hisral/mycdn@e6d14ea/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="https://cdn.jsdelivr.net/gh/hisral/mycdn@e6d14ea/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="https://cdn.jsdelivr.net/gh/hisral/mycdn@e6d14ea/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
