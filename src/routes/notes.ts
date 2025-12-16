@@ -11,7 +11,8 @@ app.get('/notes', async (c) => {
   const user = await getSession(c);
   if (!user) return c.redirect('/');
   
-  const isWriter = canWrite(user); // Cek Izin
+  // Cek Hak Akses
+  const isWriter = canWrite(user);
 
   return c.html(Layout(html`
     <div class="h-full flex flex-col bg-slate-50">
@@ -24,6 +25,7 @@ app.get('/notes', async (c) => {
                 </p>
             </div>
 
+            <!-- SEARCH BAR -->
             <div class="relative w-full md:w-64 order-last md:order-none">
                 <input type="text" placeholder="Cari catatan..." oninput="searchNotes(this.value)" 
                     class="w-full pl-9 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none transition">
@@ -31,7 +33,7 @@ app.get('/notes', async (c) => {
             </div>
 
             <div class="flex gap-2 w-full md:w-auto">
-                <!-- HANYA TAMPIL JIKA WRITER -->
+                <!-- HANYA TAMPIL JIKA WRITER (Admin/Contributor) -->
                 ${isWriter ? html`
                  <button onclick="createNote(true)" class="flex-1 md:flex-none bg-amber-100 hover:bg-amber-200 text-amber-800 px-4 py-2 rounded-lg font-medium transition text-sm flex justify-center items-center gap-2">
                     <i data-lucide="folder-plus" class="w-4 h-4"></i> Folder
@@ -43,12 +45,18 @@ app.get('/notes', async (c) => {
             </div>
         </div>
 
+        <!-- Breadcrumbs Navigation -->
         <div class="bg-white border-b border-gray-100 px-4 md:px-8 py-2 overflow-x-auto whitespace-nowrap">
-            <div id="breadcrumbs" class="flex items-center text-sm text-slate-600 min-h-[24px]"></div>
+            <div id="breadcrumbs" class="flex items-center text-sm text-slate-600 min-h-[24px]">
+                <!-- Diisi via JS -->
+            </div>
         </div>
 
+        <!-- Notes Grid/List -->
         <div class="flex-1 p-4 md:p-6 overflow-y-auto">
-            <div id="notesContainer" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+            <div id="notesContainer" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Diisi via JS -->
+            </div>
         </div>
     </div>
 
@@ -76,13 +84,16 @@ app.get('/notes', async (c) => {
 
     <!-- Logic Script -->
     <script>
+        // --- INDEXED DB HELPER ---
         const DB_NAME = 'TeamAppDB';
         const STORE_NAME = 'notes';
         const dbPromise = new Promise((resolve, reject) => {
             const req = indexedDB.open(DB_NAME, 1);
             req.onupgradeneeded = (e) => {
                 const db = e.target.result;
-                if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                }
             };
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => reject(req.error);
@@ -104,8 +115,9 @@ app.get('/notes', async (c) => {
         let currentNoteId = null;
         let searchTerm = '';
         
-        // PERMISSION FROM SERVER
-        const canWrite = ${isWriter}; 
+        // --- PERBAIKAN UTAMA DISINI ---
+        // Mengubah boolean menjadi string 'true' atau 'false' agar tidak error syntax
+        const canWrite = ${isWriter ? 'true' : 'false'}; 
 
         const container = document.getElementById('notesContainer');
         const breadcrumbs = document.getElementById('breadcrumbs');
