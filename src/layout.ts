@@ -96,3 +96,4 @@ export const Layout = (content: any, title: string, user?: any) => html`
   <script>lucide.createIcons();</script>
 </body>
 </html>
+`;
