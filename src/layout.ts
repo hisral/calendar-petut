@@ -1,5 +1,8 @@
 import { html } from 'hono/html';
 
+// URL CDN ke Repository GitHub Anda (Branch main)
+const CDN_URL = 'https://cdn.jsdelivr.net/gh/hisral/calendar-petut@main';
+
 export const Layout = (content: any, title: string, user?: any) => html`
 <!DOCTYPE html>
 <html lang="id">
@@ -8,10 +11,11 @@ export const Layout = (content: any, title: string, user?: any) => html`
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>${title}</title>
   
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="manifest" href="/site.webmanifest">
+  <!-- FAVICON DARI GITHUB CDN -->
+  <link rel="apple-touch-icon" sizes="180x180" href="${CDN_URL}/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="${CDN_URL}/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="${CDN_URL}/favicon-16x16.png">
+  <link rel="shortcut icon" href="${CDN_URL}/favicon.ico">
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
@@ -35,7 +39,11 @@ export const Layout = (content: any, title: string, user?: any) => html`
   ${user ? html`
   <!-- DESKTOP SIDEBAR -->
   <aside class="w-64 bg-slate-900 text-white flex-col hidden md:flex shadow-xl z-20 h-full">
-    <div class="h-16 flex items-center px-6 text-xl font-bold border-b border-slate-700 bg-slate-800 tracking-tight">📅 Team App</div>
+    <div class="h-16 flex items-center px-6 text-xl font-bold border-b border-slate-700 bg-slate-800 tracking-tight">
+        <!-- Ganti Emoji dengan Logo Gambar Kecil -->
+        <img src="${CDN_URL}/favicon-32x32.png" class="w-6 h-6 mr-2 opacity-80">
+        Team App
+    </div>
     <nav class="flex-1 px-3 py-6 space-y-1">
       <div class="px-3 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Menu</div>
       <a href="/home" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition ${title === 'Home' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-300'}"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> <span>Home</span></a>
@@ -88,4 +96,3 @@ export const Layout = (content: any, title: string, user?: any) => html`
   <script>lucide.createIcons();</script>
 </body>
 </html>
-`;
